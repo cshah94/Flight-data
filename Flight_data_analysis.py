@@ -14,7 +14,7 @@ assert spark.version >= '2.3' # make sure we have Spark 2.3+
 
 
 # In[15]:
-def main(inputs):
+def main(inputs, inputs1):
     air_schema = StructType([
         StructField("Year", IntegerType()),
         StructField("Month", IntegerType()),
@@ -71,14 +71,22 @@ def main(inputs):
         StructField("DivArrDelay", StringType()),
         StructField("DivDistance", StringType()),
     ])
+    carrier_schema = StructType([
+        StructField("UniqueCarrier", StringType()),
+        StructField("CarrierName", StringType()),
+    ])
 
 
-
-
-flight_data = spark.read.csv(inputs, schema = air_schema)
-flight_data.printSchema()
+    flight_data = spark.read.csv(inputs, schema = air_schema)
+    carrier_data = spark.read.csv(inputs1, schema = carrier_schema) 
+#performing a join with flight data to get the corresponding carrier name
+    carrier_data_re = carrier_data.withColumnRenamed("UniqueCarrier","UniCarrier")
+    flight_join_carrier = flight_data.join(carrier_data_re, flight_data.UniqueCarrier == carrier_data_re.UniCarrier)
+    flight_final = flight_join_carrier.select("UniqueCarrier","CarrierName","OriginCityName")
+     
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
-    main(inputs)
+    inputs1 = sys.argv[2]
+    main(inputs, inputs1)
